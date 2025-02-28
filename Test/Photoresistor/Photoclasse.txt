@@ -1,0 +1,59 @@
+class SensorLEDController {
+private:
+    int sensorPin;         // Pin des Sensors
+    int ledPin;            // Pin der LED
+    int sensorMin;         // Minimaler Sensorwert
+    int sensorMax;         // Maximaler Sensorwert
+
+public:
+    // Konstruktor
+    SensorLEDController(int sensorPin, int ledPin)
+        : sensorPin(sensorPin), ledPin(ledPin), sensorMin(1023), sensorMax(0) {}
+
+    // Initialisierung
+    void begin() {
+        pinMode(ledPin, OUTPUT);
+        pinMode(LED_BUILTIN, OUTPUT);
+    }
+
+    // Sensor kalibrieren
+    void calibrate(unsigned long duration) {
+        digitalWrite(LED_BUILTIN, HIGH); // Kalibrierungssignal
+        unsigned long startTime = millis();
+
+        while (millis() - startTime < duration) {
+            int value = analogRead(sensorPin);
+
+            // Maximal- und Minimalwerte aktualisieren
+            sensorMin = min(sensorMin, value);
+            sensorMax = max(sensorMax, value);
+        }
+
+        digitalWrite(LED_BUILTIN, LOW); // Kalibrierung abgeschlossen
+    }
+
+    // Sensorwert lesen und auf neuen Bereich mappen
+    int getMappedValue(int newMin = 0, int newMax = 255) {
+        int value = analogRead(sensorPin);
+        value = map(value, sensorMin, sensorMax, newMin, newMax);
+        return constrain(value, newMin, newMax);
+    }
+
+    // LED-Helligkeit setzen
+    void setLED(int value) {
+        analogWrite(ledPin, value);
+    }
+};
+
+SensorLEDController controller(A0, 9); // Instanz der Klasse mit Sensor- und LED-Pin
+
+void setup() {
+    controller.begin();          // Pins initialisieren
+    controller.calibrate(5000);  // Kalibrierung (5 Sekunden)
+}
+
+void loop() {
+    int sensorValue = controller.getMappedValue(); // Kalibrierten Wert abrufen
+    controller.setLED(sensorValue);               // LED-Helligkeit setzen
+    delay(50);                                    // Kurze Verzögerung
+}
